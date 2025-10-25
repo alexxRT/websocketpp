@@ -138,6 +138,7 @@ public:
      */
     connection_ptr connect(connection_ptr con) {
         // Ask transport to perform a connection
+        std::cout << con->get_uri() << std::endl;
         transport_type::async_connect(
             lib::static_pointer_cast<transport_con_type>(con),
             con->get_uri(),

@@ -86,11 +86,12 @@ public:
     typedef typename response_type::ptr response_ptr;
 
     /// Type of a pointer to the Asio io_service being used
-    typedef lib::asio::io_service * io_service_ptr;
+    typedef lib::asio::io_context * io_service_ptr;
     /// Type of a pointer to the Asio io_service::strand being used
-    typedef lib::shared_ptr<lib::asio::io_service::strand> strand_ptr;
+    typedef lib::shared_ptr<lib::asio::io_context::strand> strand_ptr;
     /// Type of a pointer to the Asio timer class
     typedef lib::shared_ptr<lib::asio::steady_timer> timer_ptr;
+    using clk = lib::chrono::steady_clock;
 
     // connection is friends with its associated endpoint to allow the endpoint
     // to call private/protected utility methods that we don't want to expose
@@ -120,7 +121,7 @@ public:
      * Called by the endpoint as a connection is being established to provide
      * the uri being connected to to the transport layer.
      *
-     * This transport policy doesn't use the uri except to forward it to the 
+     * This transport policy doesn't use the uri except to forward it to the
      * socket layer.
      *
      * @since 0.6.0
@@ -317,7 +318,7 @@ public:
                 lib::asio::milliseconds(duration))
         );
 
-        if (config::enable_multithreading) {
+        if constexpr(config::enable_multithreading) {
             new_timer->async_wait(m_strand->wrap(lib::bind(
                 &type::handle_timer, get_shared(),
                 new_timer,
@@ -376,14 +377,14 @@ public:
      * Primarily used if you are using mismatched asio / system_error
      * implementations such as `boost::asio` with `std::system_error`. In these
      * cases the transport error type is different than the library error type
-     * and some WebSocket++ functions that return transport errors via the 
+     * and some WebSocket++ functions that return transport errors via the
      * library error code type will be coerced into a catch all `pass_through`
-     * or `tls_error` error. This method will return the original machine 
+     * or `tls_error` error. This method will return the original machine
      * readable transport error in the native type.
      *
      * @since 0.7.0
      *
-     * @return Error code indicating the reason the connection was closed or 
+     * @return Error code indicating the reason the connection was closed or
      * failed
      */
     lib::asio::error_code get_transport_ec() const {
@@ -461,8 +462,8 @@ protected:
     lib::error_code init_asio (io_service_ptr io_service) {
         m_io_service = io_service;
 
-        if (config::enable_multithreading) {
-            m_strand.reset(new lib::asio::io_service::strand(*io_service));
+        if constexpr(config::enable_multithreading) {
+            m_strand.reset(new lib::asio::io_context::strand(*io_service));
         }
 
         lib::error_code ec = socket_con_type::init_asio(io_service, m_strand,
@@ -499,7 +500,7 @@ protected:
         }
 
         timer_ptr post_timer;
-        
+
         if (config::timeout_socket_post_init > 0) {
             post_timer = set_timer(
                 config::timeout_socket_post_init,
@@ -573,7 +574,7 @@ protected:
         lib::error_code const & ec)
     {
         if (ec == transport::error::operation_aborted ||
-            (post_timer && lib::asio::is_neg(post_timer->expires_from_now())))
+            (post_timer && lib::asio::is_neg(post_timer->expiry() - clk::now())))
         {
             m_alog->write(log::alevel::devel,"post_init cancelled");
             return;
@@ -625,7 +626,7 @@ protected:
         );
 
         // Send proxy request
-        if (config::enable_multithreading) {
+        if constexpr(config::enable_multithreading) {
             lib::asio::async_write(
                 socket_con_type::get_next_layer(),
                 m_bufs,
@@ -679,7 +680,7 @@ protected:
         // Whatever aborted it will be issuing the callback so we are safe to
         // return
         if (ec == lib::asio::error::operation_aborted ||
-            lib::asio::is_neg(m_proxy_data->timer->expires_from_now()))
+            lib::asio::is_neg(m_proxy_data->timer->expiry().time_since_epoch()))
         {
             m_elog->write(log::elevel::devel,"write operation aborted");
             return;
@@ -708,7 +709,7 @@ protected:
             return;
         }
 
-        if (config::enable_multithreading) {
+        if constexpr(config::enable_multithreading) {
             lib::asio::async_read_until(
                 socket_con_type::get_next_layer(),
                 m_proxy_data->read_buf,
@@ -751,7 +752,7 @@ protected:
         // Whatever aborted it will be issuing the callback so we are safe to
         // return
         if (ec == lib::asio::error::operation_aborted ||
-            lib::asio::is_neg(m_proxy_data->timer->expires_from_now()))
+            lib::asio::is_neg(m_proxy_data->timer->expiry() - clk::now()))
         {
             m_elog->write(log::elevel::devel,"read operation aborted");
             return;
@@ -836,7 +837,7 @@ protected:
             return;
         }*/
 
-        if (config::enable_multithreading) {
+        if constexpr(config::enable_multithreading) {
             lib::asio::async_read(
                 socket_con_type::get_socket(),
                 lib::asio::buffer(buf,len),
@@ -863,9 +864,9 @@ protected:
                         lib::placeholders::_1, lib::placeholders::_2
                     )
                 )
-            );    
+            );
         }
-        
+
     }
 
     void handle_async_read(read_handler handler, lib::asio::error_code const & ec,
@@ -906,7 +907,7 @@ protected:
     void async_write(const char* buf, size_t len, write_handler handler) {
         m_bufs.push_back(lib::asio::buffer(buf,len));
 
-        if (config::enable_multithreading) {
+        if constexpr(config::enable_multithreading) {
             lib::asio::async_write(
                 socket_con_type::get_socket(),
                 m_bufs,
@@ -943,7 +944,7 @@ protected:
             m_bufs.push_back(lib::asio::buffer((*it).buf,(*it).len));
         }
 
-        if (config::enable_multithreading) {
+        if constexpr(config::enable_multithreading) {
             lib::asio::async_write(
                 socket_con_type::get_socket(),
                 m_bufs,
@@ -1011,19 +1012,19 @@ protected:
      * This needs to be thread safe
      */
     lib::error_code interrupt(interrupt_handler handler) {
-        if (config::enable_multithreading) {
-            m_io_service->post(m_strand->wrap(handler));
+        if constexpr(config::enable_multithreading) {
+            boost::asio::post(*m_io_service, m_strand->wrap(handler));
         } else {
-            m_io_service->post(handler);
+            boost::asio::post(*m_io_service, handler);
         }
         return lib::error_code();
     }
 
     lib::error_code dispatch(dispatch_handler handler) {
-        if (config::enable_multithreading) {
-            m_io_service->post(m_strand->wrap(handler));
+        if constexpr(config::enable_multithreading) {
+            boost::asio::post(*m_io_service, m_strand->wrap(handler));
         } else {
-            m_io_service->post(handler);
+            boost::asio::post(*m_io_service, handler);
         }
         return lib::error_code();
     }
@@ -1067,7 +1068,7 @@ protected:
      * @param callback The function to call back
      * @param ec The status code
      */
-    void handle_async_shutdown_timeout(timer_ptr, init_handler callback, 
+    void handle_async_shutdown_timeout(timer_ptr, init_handler callback,
         lib::error_code const & ec)
     {
         lib::error_code ret_ec;
@@ -1095,7 +1096,7 @@ protected:
         callback, lib::asio::error_code const & ec)
     {
         if (ec == lib::asio::error::operation_aborted ||
-            lib::asio::is_neg(shutdown_timer->expires_from_now()))
+            lib::asio::is_neg(shutdown_timer->expiry() - clk::now()))
         {
             m_alog->write(log::alevel::devel,"async_shutdown cancelled");
             return;
