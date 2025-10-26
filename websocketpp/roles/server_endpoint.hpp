@@ -123,7 +123,7 @@ public:
             ec = error::make_error_code(error::async_accept_not_listening);
             return;
         }
-        
+
         ec = lib::error_code();
         connection_ptr con = get_connection();
 
@@ -160,6 +160,9 @@ public:
         if (ec) {
             throw exception(ec);
         }
+        if (m_accept_handler) {
+            m_accept_handler();
+        }
     }
 
     /// Handler callback for start_accept
@@ -188,6 +191,11 @@ public:
                 "Restarting async_accept loop failed: "+ec.message());
         }
     }
+    void set_accept_handler(accept_handler h) {
+        m_accept_handler = h;
+    }
+private:
+    accept_handler m_accept_handler;
 };
 
 } // namespace websocketpp
