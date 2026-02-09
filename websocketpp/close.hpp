@@ -49,7 +49,7 @@ namespace status {
     typedef uint16_t value;
 
     /// A blank value for internal use.
-    static value const blank = 0;
+    inline constexpr value blank = 0;
 
     /// Close the connection without a WebSocket close handshake.
     /**
@@ -59,7 +59,7 @@ namespace status {
      * for clients that need to disconnect quickly and cannot afford the
      * complete handshake.
      */
-    static value const omit_handshake = 1;
+    inline constexpr value omit_handshake = 1;
 
     /// Close the connection with a forced TCP drop.
     /**
@@ -69,18 +69,18 @@ namespace status {
      * should not be done except in extreme cases or in cases of malicious
      * remote endpoints.
      */
-    static value const force_tcp_drop = 2;
+    inline constexpr value force_tcp_drop = 2;
 
     /// Normal closure, meaning that the purpose for which the connection was
     /// established has been fulfilled.
-    static value const normal = 1000;
+    inline constexpr value normal = 1000;
 
     /// The endpoint was "going away", such as a server going down or a browser
     /// navigating away from a page.
-    static value const going_away = 1001;
+    inline constexpr value going_away = 1001;
 
     /// A protocol error occurred.
-    static value const protocol_error = 1002;
+    inline constexpr value protocol_error = 1002;
 
     /// The connection was terminated because an endpoint received a type of
     /// data it cannot accept.
@@ -88,26 +88,26 @@ namespace status {
      * (e.g., an endpoint that understands only text data MAY send this if it
      * receives a binary message).
      */
-    static value const unsupported_data = 1003;
+    inline constexpr value unsupported_data = 1003;
 
     /// A dummy value to indicate that no status code was received.
     /**
      * This value is illegal on the wire.
      */
-    static value const no_status = 1005;
+    inline constexpr value no_status = 1005;
 
     /// A dummy value to indicate that the connection was closed abnormally.
     /**
      * In such a case there was no close frame to extract a value from. This
      * value is illegal on the wire.
      */
-    static value const abnormal_close = 1006;
+    inline constexpr value abnormal_close = 1006;
 
     /// An endpoint received message data inconsistent with its type.
     /**
      * For example: Invalid UTF8 bytes in a text message.
      */
-    static value const invalid_payload = 1007;
+    inline constexpr value invalid_payload = 1007;
 
     /// An endpoint received a message that violated its policy.
     /**
@@ -115,10 +115,10 @@ namespace status {
      * more suitable status code (e.g., 1003 or 1009) or if there is a need to
      * hide specific details about the policy.
      */
-    static value const policy_violation = 1008;
+    inline constexpr value policy_violation = 1008;
 
     /// An endpoint received a message too large to process.
-    static value const message_too_big = 1009;
+    inline constexpr value message_too_big = 1009;
 
     /// A client expected the server to accept a required extension request
     /**
@@ -126,26 +126,26 @@ namespace status {
      * of the Close frame. Note that this status code is not used by the server,
      * because it can fail the WebSocket handshake instead.
      */
-    static value const extension_required = 1010;
+    inline constexpr value extension_required = 1010;
 
     /// An endpoint encountered an unexpected condition that prevented it from
     /// fulfilling the request.
-    static value const internal_endpoint_error = 1011;
+    inline constexpr value internal_endpoint_error = 1011;
 
     /// Indicates that the service is restarted. A client may reconnect and if
     /// if it chooses to do so, should reconnect using a randomized delay of
     /// 5-30s
-    static value const service_restart = 1012;
+    inline constexpr value service_restart = 1012;
 
     /// Indicates that the service is experiencing overload. A client should
     /// only connect to a different IP (when there are multiple for the target)
     /// or reconnect to the same IP upon user action.
-    static value const try_again_later = 1013;
+    inline constexpr value try_again_later = 1013;
 
     /// Indicates that the server was acting as a gateway or proxy and received
     /// an invalid response from the upstream server. This is similar to 502
     /// HTTP Status Code.
-    static value const bad_gateway = 1014;
+    inline constexpr value bad_gateway = 1014;
 
     /// An endpoint failed to perform a TLS handshake
     /**
@@ -154,7 +154,7 @@ namespace status {
      * handshake (e.g., the server certificate can't be verified). This value is
      * illegal on the wire.
      */
-    static value const tls_handshake = 1015;
+    inline constexpr value tls_handshake = 1015;
     
     /// A generic subprotocol error
     /**
@@ -162,19 +162,19 @@ namespace status {
      * receiving a message that is not formatted as a valid message for the
      * subprotocol in use.
      */
-    static value const subprotocol_error = 3000;
+    inline constexpr value subprotocol_error = 3000;
     
     /// A invalid subprotocol data
     /**
      * Indicates that data was received that violated the specification of the
      * subprotocol in use.
      */
-    static value const invalid_subprotocol_data = 3001;
+    inline constexpr value invalid_subprotocol_data = 3001;
 
     /// First value in range reserved for future protocol use
-    static value const rsv_start = 1016;
+    inline constexpr value rsv_start = 1016;
     /// Last value in range reserved for future protocol use
-    static value const rsv_end = 2999;
+    inline constexpr value rsv_end = 2999;
 
     /// Test whether a close code is in a reserved range
     /**
